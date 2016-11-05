@@ -1,4 +1,10 @@
+CC=clang
+CFLAGS=-Wall
+
 all: rossa
 
+debug: CFLAGS += -g
+debug: all
+
 rossa: rossa.c
-	$(CC) rossa.c -o rossa
+	$(CC) $(CFLAGS) rossa.c -o rossa
