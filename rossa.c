@@ -1,8 +1,10 @@
+#include <stdbool.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include <unistd.h>
 
+#define EXECUTABLE_NAME "rossa"
 #define NOTIFICATION_COMMAND "notify-send"
 #define NOTIFICATION_SUMMARY "Battery Info:"
 #define SLEEP_PERIOD 600
@@ -11,10 +13,34 @@ char *trim_new_line(char *a_string) {
     return strtok(a_string, "\n");
 }
 
+void print_usage() {
+    printf("Usage: %s [-do]\n", EXECUTABLE_NAME);
+}
+
 int main(int argc, char* argv[]) {
+    bool daemonize = false, one_time = false;
+    int opt;
+    while ((opt = getopt(argc, argv, "do")) != -1) {
+        switch(opt) {
+        case 'd':
+            daemonize = true;
+            break;
+        case 'o':
+            one_time = true;
+            break;
+        default:
+            print_usage();
+            exit(1);
+        }
+    }
+
     while (1) {
-        daemon(1, 0);
-        sleep(SLEEP_PERIOD);
+        if (daemonize) {
+            daemon(true, false);
+        }
+        if (!one_time) {
+            sleep(SLEEP_PERIOD);
+        }
         FILE *fp = popen("acpi", "r");
         char *acpi_output = NULL;
         size_t len;
@@ -46,6 +72,9 @@ int main(int argc, char* argv[]) {
         system(command);
         free(command);
         fclose(fp);
+        if (one_time) {
+            break;
+        }
     }
     return 0;
 }

@@ -8,3 +8,6 @@ debug: all
 
 rossa: rossa.c
 	$(CC) $(CFLAGS) rossa.c -o rossa
+
+clean:
+	rm rossa
