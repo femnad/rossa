@@ -87,10 +87,10 @@ int main(int argc, char* argv[]) {
     }
     int number_of_batteries = get_number_of_batteries();
     double critical_percentage = get_critical_percentage(number_of_batteries);
+    if (daemonize) {
+        daemon(true, false);
+    }
     while (1) {
-        if (daemonize) {
-            daemon(true, false);
-        }
         if (!one_time) {
             sleep(SLEEP_PERIOD);
         }
