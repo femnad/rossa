@@ -90,10 +90,7 @@ int main(int argc, char* argv[]) {
     if (daemonize) {
         daemon(true, false);
     }
-    while (1) {
-        if (!one_time) {
-            sleep(SLEEP_PERIOD);
-        }
+    while (true) {
         battery_status status[number_of_batteries];
         for (int i = 0; i < number_of_batteries; i++) {
             battery_status s;
@@ -137,6 +134,8 @@ int main(int argc, char* argv[]) {
         }
         if (one_time) {
             break;
+        } else {
+            sleep(SLEEP_PERIOD);
         }
     }
     return 0;
