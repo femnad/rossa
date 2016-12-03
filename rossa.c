@@ -26,13 +26,33 @@ void print_usage() {
     printf("Usage: %s [-do]\n", EXECUTABLE_NAME);
 }
 
+char *get_battery_info(int battery_number, char *info_file) {
+    char *battery_filename = malloc(sizeof(char) * 256);
+    sprintf(battery_filename, "/sys/class/power_supply/BAT%d/%s", battery_number, info_file);
+    FILE *battery_file = fopen(battery_filename, "r");
+    char *info = malloc(sizeof(char *));
+    fscanf(battery_file, "%s", info);
+    fclose(battery_file);
+    return info;
+}
+
 int get_energy(int battery_number, char *specifier) {
     char *battery_filename = malloc(sizeof(char) * 256);
     sprintf(battery_filename, "/sys/class/power_supply/BAT%d/energy_%s", battery_number, specifier);
     FILE *battery_file = fopen(battery_filename, "r");
     int current_energy = 0;
     fscanf(battery_file, "%d", &current_energy);
+    fclose(battery_file);
     return current_energy;
+}
+
+char *get_charge_status(int battery_number) {
+    return get_battery_info(battery_number, "status");
+}
+
+bool is_charging(int battery_number) {
+    char *charge_status = get_charge_status(battery_number);
+    return strcmp(charge_status, "Charging") == 0;
 }
 
 double get_charge_percentage(const int battery_number) {
@@ -92,14 +112,16 @@ int main(int argc, char* argv[]) {
     }
     while (true) {
         battery_status status[number_of_batteries];
+        bool any_charging = false;
         for (int i = 0; i < number_of_batteries; i++) {
             battery_status s;
             s.battery_number = i;
             s.charge_percentage = get_charge_percentage(i);
+            any_charging |= is_charging(i);
             status[i] = s;
         }
         double total_percentage = get_total_percentage(status, number_of_batteries);
-        if (total_percentage < critical_percentage) {
+        if (!any_charging && total_percentage < critical_percentage) {
             FILE *fp = popen("acpi", "r");
             char *acpi_output = NULL;
             size_t len;
