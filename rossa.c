@@ -27,20 +27,21 @@ char *get_battery_info(int battery_number, char *info_file) {
     char *battery_filename = malloc(sizeof(char) * 256);
     sprintf(battery_filename, "/sys/class/power_supply/BAT%d/%s", battery_number, info_file);
     FILE *battery_file = fopen(battery_filename, "r");
-    char *info = malloc(sizeof(char *));
+    if (battery_file == NULL) {
+        perror(battery_filename);
+        exit(1);
+    }
+    char *info = malloc(sizeof(char) * 256);
     fscanf(battery_file, "%s", info);
     fclose(battery_file);
     return info;
 }
 
 int get_energy(int battery_number, char *specifier) {
-    char *battery_filename = malloc(sizeof(char) * 256);
-    sprintf(battery_filename, "/sys/class/power_supply/BAT%d/energy_%s", battery_number, specifier);
-    FILE *battery_file = fopen(battery_filename, "r");
-    int current_energy = 0;
-    fscanf(battery_file, "%d", &current_energy);
-    fclose(battery_file);
-    return current_energy;
+    char *info_file = malloc(sizeof(char) * 256);
+    sprintf(info_file, "energy_%s", specifier);
+    char *battery_info = get_battery_info(battery_number, info_file);
+    return (int) battery_info;
 }
 
 char *get_charge_status(int battery_number) {
