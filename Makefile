@@ -1,5 +1,5 @@
 CC=clang
-CFLAGS=-Wall
+CFLAGS=-Wall $(shell pkg-config --cflags --libs libnotify)
 
 all: rossa
 
