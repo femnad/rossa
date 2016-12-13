@@ -41,7 +41,8 @@ int get_energy(int battery_number, char *specifier) {
     char *info_file = malloc(sizeof(char) * 256);
     sprintf(info_file, "energy_%s", specifier);
     char *battery_info = get_battery_info(battery_number, info_file);
-    return (int) battery_info;
+    long temp = strtol(battery_info, NULL, 10);
+    return (int) temp;
 }
 
 char *get_charge_status(int battery_number) {
@@ -54,6 +55,10 @@ bool is_charging(int battery_number) {
 }
 
 double get_charge_percentage(const int battery_number) {
+    char *status = get_charge_status(battery_number);
+    if (strcmp(status, "Unknown") == 0) {
+        return 0.0;
+    }
     int current_charge = get_energy(battery_number, "now");
     int full_charge = get_energy(battery_number, "full");
     double charge_percentage = (double) current_charge / full_charge;
