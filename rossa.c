@@ -8,8 +8,8 @@
 
 #include <libnotify/notify.h>
 
-#define BASE_CRITICAL_PERCENTAGE 0.1
-#define BATTERY_NUMBER_MULTIPLIER 1.5
+#define CRITICAL_PERCENTAGE 0.15
+#define MINIMUM_CHARGE 0.05
 #define EXECUTABLE_NAME "rossa"
 #define NOTIFICATION_SUMMARY "Battery Low"
 #define SLEEP_PERIOD 60
@@ -55,13 +55,13 @@ bool is_charging(int battery_number) {
 }
 
 double get_charge_percentage(const int battery_number) {
-    char *status = get_charge_status(battery_number);
-    if (strcmp(status, "Unknown") == 0) {
-        return 0.0;
-    }
     int current_charge = get_energy(battery_number, "now");
     int full_charge = get_energy(battery_number, "full");
     double charge_percentage = (double) current_charge / full_charge;
+    char *status = get_charge_status(battery_number);
+    if (strcmp(status, "Unknown") == 0 && charge_percentage < MINIMUM_CHARGE) {
+        return 0.0;
+    }
     return charge_percentage;
 }
 
@@ -87,10 +87,6 @@ int get_number_of_batteries() {
     return number_of_batteries;
 }
 
-double get_critical_percentage(const int number_of_batteries) {
-    return number_of_batteries * BASE_CRITICAL_PERCENTAGE * BATTERY_NUMBER_MULTIPLIER;
-}
-
 int main(int argc, char* argv[]) {
     bool daemonize = false, one_time = false;
     int opt;
@@ -109,7 +105,6 @@ int main(int argc, char* argv[]) {
         }
     }
     int number_of_batteries = get_number_of_batteries();
-    double critical_percentage = get_critical_percentage(number_of_batteries);
     if (daemonize) {
         daemon(true, false);
     }
@@ -125,7 +120,7 @@ int main(int argc, char* argv[]) {
             status[i] = s;
         }
         double total_percentage = get_total_percentage(status, number_of_batteries);
-        if (!any_charging && total_percentage < critical_percentage) {
+        if (!any_charging && total_percentage < CRITICAL_PERCENTAGE) {
             char *notification_body = malloc(sizeof(char) * 256);
             sprintf(notification_body, "Remaining: %0.f%%", total_percentage * 100);
             NotifyNotification *notification = notify_notification_new
