@@ -9,7 +9,7 @@
 #include <libnotify/notify.h>
 
 #define CRITICAL_PERCENTAGE 0.15
-#define MINIMUM_CHARGE 0.05
+#define MINIMUM_CHARGE 0.06
 #define EXECUTABLE_NAME "rossa"
 #define NOTIFICATION_SUMMARY "Battery Low"
 #define SLEEP_PERIOD 60
