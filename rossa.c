@@ -37,21 +37,23 @@ char *get_battery_info(int battery_number, char *info_file) {
     return info;
 }
 
-int get_energy(int battery_number, char *specifier) {
-    char *info_file = malloc(sizeof(char) * 256);
-    sprintf(info_file, "energy_%s", specifier);
-    char *battery_info = get_battery_info(battery_number, info_file);
-    long temp = strtol(battery_info, NULL, 10);
-    return (int) temp;
+char *get_charge_status(int);
+
+bool is_charging(int battery_number) {
+    char *charge_status = get_charge_status(battery_number);
+    return strcmp(charge_status, "Charging") == 0;
 }
 
 char *get_charge_status(int battery_number) {
     return get_battery_info(battery_number, "status");
 }
 
-bool is_charging(int battery_number) {
-    char *charge_status = get_charge_status(battery_number);
-    return strcmp(charge_status, "Charging") == 0;
+int get_energy(int battery_number, char *specifier) {
+    char *info_file = malloc(sizeof(char) * 256);
+    sprintf(info_file, "energy_%s", specifier);
+    char *battery_info = get_battery_info(battery_number, info_file);
+    long temp = strtol(battery_info, NULL, 10);
+    return (int) temp;
 }
 
 double get_charge_percentage(const int battery_number) {
@@ -65,12 +67,39 @@ double get_charge_percentage(const int battery_number) {
     return charge_percentage;
 }
 
-double get_total_percentage(battery_status combined_batteries[], int number_of_batteries) {
+double get_total_percentage(int number_of_batteries) {
     double total_charge = 0.0;
+
     for (int i = 0; i < number_of_batteries; i++) {
-        total_charge += combined_batteries[i].charge_percentage;
+        total_charge += get_charge_percentage(i);
     }
+
     return total_charge;
+}
+
+typedef enum _overall_status {
+    NEED_JUICE, ROLLING_ALONG, CAN_GET_MORE, TOO_MUCH }
+    overall_status;
+
+overall_status get_overall_status(int number_of_batteries) {
+    battery_status status[number_of_batteries];
+
+    bool any_charging = false;
+    for (int i = 0; i < number_of_batteries; i++) {
+        battery_status s;
+        s.battery_number = i;
+        s.charge_percentage = get_charge_percentage(i);
+        any_charging |= is_charging(i);
+        status[i] = s;
+    }
+
+    double total_percentage = get_total_percentage(number_of_batteries);
+
+    if (!any_charging && total_percentage < CRITICAL_PERCENTAGE) {
+        return NEED_JUICE;
+    } else {
+        return ROLLING_ALONG;
+    }
 }
 
 int get_number_of_batteries() {
@@ -85,6 +114,17 @@ int get_number_of_batteries() {
     }
     closedir(power_supply_dir);
     return number_of_batteries;
+}
+
+void show_remaining_battery_percentage(int number_of_batteries) {
+    char *notification_body = malloc(sizeof(char) * 256);
+
+    double total_percentage = get_total_percentage(number_of_batteries);
+    sprintf(notification_body, "Remaining: %0.f%%", total_percentage * 100);
+
+    NotifyNotification *notification = notify_notification_new
+        (NOTIFICATION_SUMMARY, notification_body, NULL);
+    notify_notification_show(notification, NULL);
 }
 
 int main(int argc, char* argv[]) {
@@ -110,23 +150,21 @@ int main(int argc, char* argv[]) {
     }
     notify_init(EXECUTABLE_NAME);
     while (true) {
-        battery_status status[number_of_batteries];
-        bool any_charging = false;
-        for (int i = 0; i < number_of_batteries; i++) {
-            battery_status s;
-            s.battery_number = i;
-            s.charge_percentage = get_charge_percentage(i);
-            any_charging |= is_charging(i);
-            status[i] = s;
+        overall_status current_status = get_overall_status(number_of_batteries);
+
+        switch (current_status) {
+
+            case NEED_JUICE:
+
+                show_remaining_battery_percentage(number_of_batteries);
+                break;
+
+            default:
+                // Not doing anything here at the moment
+                break;
+
         }
-        double total_percentage = get_total_percentage(status, number_of_batteries);
-        if (!any_charging && total_percentage < CRITICAL_PERCENTAGE) {
-            char *notification_body = malloc(sizeof(char) * 256);
-            sprintf(notification_body, "Remaining: %0.f%%", total_percentage * 100);
-            NotifyNotification *notification = notify_notification_new
-                (NOTIFICATION_SUMMARY, notification_body, NULL);
-            notify_notification_show(notification, NULL);
-        }
+
         if (one_time) {
             break;
         } else {
