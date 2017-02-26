@@ -9,9 +9,9 @@
 #include <libnotify/notify.h>
 
 #define CRITICAL_PERCENTAGE 0.15
-#define MINIMUM_CHARGE 0.06
 #define EXECUTABLE_NAME "rossa"
-#define NOTIFICATION_SUMMARY "Battery Low"
+#define MINIMUM_CHARGE 0.06
+#define OUGHT_TO_BE_ENOUGH 0.98
 #define SLEEP_PERIOD 60
 
 typedef struct _battery_status {
@@ -38,10 +38,24 @@ char *get_battery_info(int battery_number, char *info_file) {
 }
 
 char *get_charge_status(int);
+double get_charge_percentage(const int);
+
+bool is_status(int battery_number, char *expected_status) {
+    char *charge_status = get_charge_status(battery_number);
+    return strcmp(charge_status, expected_status) == 0;
+}
 
 bool is_charging(int battery_number) {
-    char *charge_status = get_charge_status(battery_number);
-    return strcmp(charge_status, "Charging") == 0;
+    return is_status(battery_number, "Charging");
+}
+
+bool is_full(int battery_number) {
+    return is_status(battery_number, "Full");
+}
+
+bool is_full_or_almost_full(int battery_number) {
+    return is_full(battery_number) ||
+        (get_charge_percentage(battery_number) >= OUGHT_TO_BE_ENOUGH);
 }
 
 char *get_charge_status(int battery_number) {
@@ -85,11 +99,14 @@ overall_status get_overall_status(int number_of_batteries) {
     battery_status status[number_of_batteries];
 
     bool any_charging = false;
+    bool all_full_enough = true;
+
     for (int i = 0; i < number_of_batteries; i++) {
         battery_status s;
         s.battery_number = i;
         s.charge_percentage = get_charge_percentage(i);
         any_charging |= is_charging(i);
+        all_full_enough &= is_full_or_almost_full(i);
         status[i] = s;
     }
 
@@ -97,6 +114,8 @@ overall_status get_overall_status(int number_of_batteries) {
 
     if (!any_charging && total_percentage < CRITICAL_PERCENTAGE) {
         return NEED_JUICE;
+    } else if(all_full_enough) {
+        return TOO_MUCH;
     } else {
         return ROLLING_ALONG;
     }
@@ -116,14 +135,19 @@ int get_number_of_batteries() {
     return number_of_batteries;
 }
 
-void show_remaining_battery_percentage(int number_of_batteries) {
+void show_remaining_battery_percentage(int number_of_batteries, char *summary,
+        bool show_remaning) {
     char *notification_body = malloc(sizeof(char) * 256);
 
     double total_percentage = get_total_percentage(number_of_batteries);
-    sprintf(notification_body, "Remaining: %0.f%%", total_percentage * 100);
+    if (show_remaning) {
+        sprintf(notification_body, "Remaining: %0.f%%", total_percentage * 100);
+    } else {
+        sprintf(notification_body, "Unplug or whatever");
+    }
 
     NotifyNotification *notification = notify_notification_new
-        (NOTIFICATION_SUMMARY, notification_body, NULL);
+        (summary, notification_body, NULL);
     notify_notification_show(notification, NULL);
 }
 
@@ -156,7 +180,13 @@ int main(int argc, char* argv[]) {
 
             case NEED_JUICE:
 
-                show_remaining_battery_percentage(number_of_batteries);
+                show_remaining_battery_percentage(number_of_batteries, "Battery Low", true);
+                break;
+
+            case TOO_MUCH:
+
+                // Not showing a different message here at the moment
+                show_remaining_battery_percentage(number_of_batteries, "Battery Full", false);
                 break;
 
             default:
