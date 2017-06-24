@@ -11,3 +11,6 @@ rossa: rossa.c
 
 clean:
 	rm rossa
+
+install:
+	install rossa ${HOME}/bin
