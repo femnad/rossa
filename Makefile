@@ -6,7 +6,10 @@ all: rossa
 debug: CFLAGS += -g
 debug: all
 
-rossa: rossa.c
+config.h:
+	cp config.def.h $@
+
+rossa: rossa.c config.h
 	$(CC) $(CFLAGS) rossa.c -o rossa
 
 clean:

@@ -8,11 +8,7 @@
 
 #include <libnotify/notify.h>
 
-#define CRITICAL_PERCENTAGE 0.15
-#define EXECUTABLE_NAME "rossa"
-#define MINIMUM_CHARGE 0.06
-#define OUGHT_TO_BE_ENOUGH 0.98
-#define SLEEP_PERIOD 60
+#include "config.h"
 
 typedef struct _battery_status {
     int battery_number;
@@ -142,7 +138,7 @@ void show_remaining_battery_percentage(int number_of_batteries, char *summary,
     double total_percentage = get_total_percentage(number_of_batteries);
     if (show_remaning) {
         sprintf(notification_body, "Remaining: %0.f%%", total_percentage * 100);
-    } else {
+    } else if (NAG_WHEN_ENOUGH) {
         sprintf(notification_body, "Unplug or whatever");
     }
 
