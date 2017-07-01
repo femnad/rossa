@@ -138,7 +138,7 @@ void show_remaining_battery_percentage(int number_of_batteries, char *summary,
     double total_percentage = get_total_percentage(number_of_batteries);
     if (show_remaning) {
         sprintf(notification_body, "Remaining: %0.f%%", total_percentage * 100);
-    } else if (NAG_WHEN_ENOUGH) {
+    } else {
         sprintf(notification_body, "Unplug or whatever");
     }
 
@@ -182,7 +182,9 @@ int main(int argc, char* argv[]) {
             case TOO_MUCH:
 
                 // Not showing a different message here at the moment
-                show_remaining_battery_percentage(number_of_batteries, "Battery Full", false);
+                if (NAG_WHEN_ENOUGH) {
+                    show_remaining_battery_percentage(number_of_batteries, "Battery Full", false);
+                }
                 break;
 
             default:
