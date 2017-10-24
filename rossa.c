@@ -9,6 +9,7 @@
 #include <libnotify/notify.h>
 
 #include "config.h"
+#include "rossa.h"
 
 typedef struct _battery_status {
     int battery_number;
@@ -19,9 +20,11 @@ void print_usage() {
     printf("Usage: %s [-do]\n", EXECUTABLE_NAME);
 }
 
-char *get_battery_info(int battery_number, char *info_file) {
+char*
+get_battery_info(int battery_number, char *info_file)
+{
     char *battery_filename = malloc(sizeof(char) * 256);
-    sprintf(battery_filename, "/sys/class/power_supply/BAT%d/%s", battery_number, info_file);
+    sprintf(battery_filename, "%s/BAT%d/%s", POWER_SUPPLY_DIR, battery_number, info_file);
     FILE *battery_file = fopen(battery_filename, "r");
     if (battery_file == NULL) {
         perror(battery_filename);
@@ -33,10 +36,9 @@ char *get_battery_info(int battery_number, char *info_file) {
     return info;
 }
 
-char *get_charge_status(int);
-double get_charge_percentage(const int);
-
-bool is_status(int battery_number, char *expected_status) {
+bool
+is_status(int battery_number, char *expected_status)
+{
     char *charge_status = get_charge_status(battery_number);
     return strcmp(charge_status, expected_status) == 0;
 }
@@ -120,7 +122,7 @@ overall_status get_overall_status(int number_of_batteries) {
 int get_number_of_batteries() {
     DIR *power_supply_dir;
     struct dirent *dp;
-    power_supply_dir = opendir("/sys/class/power_supply");
+    power_supply_dir = opendir(POWER_SUPPLY_DIR);
     int number_of_batteries = 0;
     while ((dp = readdir(power_supply_dir)) != NULL) {
         if (strstr(dp->d_name, "BAT") != NULL) {
