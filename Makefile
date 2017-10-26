@@ -7,7 +7,8 @@ debug: CFLAGS += -g
 debug: all
 
 config.h:
-	cp config.def.h $@
+	@echo Creating config.h from config.def.h
+	@cp config.def.h $@
 
 rossa: rossa.c config.h
 	$(CC) $(CFLAGS) rossa.c -o rossa

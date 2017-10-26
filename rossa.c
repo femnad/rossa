@@ -11,12 +11,9 @@
 #include "config.h"
 #include "rossa.h"
 
-typedef struct _battery_status {
-    int battery_number;
-    double charge_percentage;
-} battery_status;
-
-void print_usage() {
+void
+print_usage()
+{
     printf("Usage: %s [-do]\n", EXECUTABLE_NAME);
 }
 
@@ -89,34 +86,35 @@ double get_total_percentage(int number_of_batteries) {
     return total_charge;
 }
 
-typedef enum _overall_status {
-    NEED_JUICE, ROLLING_ALONG, CAN_GET_MORE, TOO_MUCH }
-    overall_status;
-
 overall_status get_overall_status(int number_of_batteries) {
-    battery_status status[number_of_batteries];
-
     bool any_charging = false;
     bool all_full_enough = true;
 
+    double total_percentage = 0;
     for (int i = 0; i < number_of_batteries; i++) {
-        battery_status s;
-        s.battery_number = i;
-        s.charge_percentage = get_charge_percentage(i);
+        total_percentage += get_charge_percentage(i);
         any_charging |= is_charging(i);
         all_full_enough &= is_full_or_almost_full(i);
-        status[i] = s;
     }
 
-    double total_percentage = get_total_percentage(number_of_batteries);
+    if (!any_charging)
+    {
+        if (total_percentage < CRITICAL_PERCENTAGE)
+        {
+            return CRITICAL;
+        }
+        else if (total_percentage < LOW_PERCENTAGE)
+        {
+            return LOW_BATTERY;
+        }
+    }
 
-    if (!any_charging && total_percentage < CRITICAL_PERCENTAGE) {
-        return NEED_JUICE;
-    } else if(all_full_enough) {
+    if (all_full_enough)
+    {
         return TOO_MUCH;
-    } else {
-        return ROLLING_ALONG;
     }
+
+    return ROLLING_ALONG;
 }
 
 int get_number_of_batteries() {
@@ -176,7 +174,7 @@ int main(int argc, char* argv[]) {
 
         switch (current_status) {
 
-            case NEED_JUICE:
+            case LOW_BATTERY:
 
                 show_remaining_battery_percentage(number_of_batteries, "Battery Low", true);
                 break;
