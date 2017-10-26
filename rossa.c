@@ -194,7 +194,6 @@ int main(int argc, char* argv[]) {
         default:
             // Not doing anything here at the moment
             break;
-
         }
 
         if (one_time) {
