@@ -9,6 +9,7 @@
 #include <libnotify/notify.h>
 
 #include "config.h"
+#include "systemd_action.h"
 #include "rossa.h"
 
 void
@@ -169,27 +170,30 @@ int main(int argc, char* argv[]) {
         daemon(true, false);
     }
     notify_init(EXECUTABLE_NAME);
+
     while (true) {
         overall_status current_status = get_overall_status(number_of_batteries);
 
         switch (current_status) {
 
-            case LOW_BATTERY:
+        case LOW_BATTERY:
+            show_remaining_battery_percentage(number_of_batteries, "Battery Low", true);
+            break;
 
-                show_remaining_battery_percentage(number_of_batteries, "Battery Low", true);
-                break;
+        case CRITICAL:
+            hibernate();
+            break;
 
-            case TOO_MUCH:
+        case TOO_MUCH:
+            // Not showing a different message here at the moment
+            if (NAG_WHEN_ENOUGH) {
+                show_remaining_battery_percentage(number_of_batteries, "Battery Full", false);
+            }
+            break;
 
-                // Not showing a different message here at the moment
-                if (NAG_WHEN_ENOUGH) {
-                    show_remaining_battery_percentage(number_of_batteries, "Battery Full", false);
-                }
-                break;
-
-            default:
-                // Not doing anything here at the moment
-                break;
+        default:
+            // Not doing anything here at the moment
+            break;
 
         }
 
@@ -199,6 +203,7 @@ int main(int argc, char* argv[]) {
             sleep(SLEEP_PERIOD);
         }
     }
+
     notify_uninit();
     return 0;
 }
