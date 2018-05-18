@@ -5,3 +5,4 @@
 #define NAG_WHEN_ENOUGH false
 #define OUGHT_TO_BE_ENOUGH 0.98
 #define SLEEP_PERIOD 60
+#define SYS_CLASS_WORD "energy"

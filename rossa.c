@@ -60,7 +60,7 @@ char *get_charge_status(int battery_number) {
 
 int get_energy(int battery_number, char *specifier) {
     char *info_file = malloc(sizeof(char) * 256);
-    sprintf(info_file, "energy_%s", specifier);
+    sprintf(info_file, "%s_%s", SYS_CLASS_WORD, specifier);
     char *battery_info = get_battery_info(battery_number, info_file);
     long temp = strtol(battery_info, NULL, 10);
     return (int) temp;
