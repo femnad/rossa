@@ -28,6 +28,7 @@ get_battery_info(int battery_number, char *info_file)
         perror(battery_filename);
         exit(1);
     }
+    free(battery_filename);
     char *info = malloc(sizeof(char) * 256);
     fscanf(battery_file, "%s", info);
     fclose(battery_file);
@@ -63,6 +64,7 @@ int get_energy(int battery_number, char *specifier) {
     sprintf(info_file, "%s_%s", SYS_CLASS_WORD, specifier);
     char *battery_info = get_battery_info(battery_number, info_file);
     long temp = strtol(battery_info, NULL, 10);
+    free(info_file);
     return (int) temp;
 }
 
@@ -74,6 +76,7 @@ double get_charge_percentage(const int battery_number) {
     if (strcmp(status, "Unknown") == 0 && charge_percentage < MINIMUM_CHARGE) {
         return 0.0;
     }
+    free(status);
     return charge_percentage;
 }
 
@@ -151,6 +154,7 @@ void show_remaining_battery_percentage(int number_of_batteries, char *summary,
         fprintf(stderr, "Error on notification: %s\n", err->message);
         g_error_free(err);
     }
+    free(notification_body);
 }
 
 int main(int argc, char* argv[]) {
