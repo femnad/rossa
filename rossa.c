@@ -145,7 +145,12 @@ void show_remaining_battery_percentage(int number_of_batteries, char *summary,
 
     NotifyNotification *notification = notify_notification_new
         (summary, notification_body, NULL);
-    notify_notification_show(notification, NULL);
+    GError *err = NULL;
+    bool success = notify_notification_show(notification, &err);
+    if (!success) {
+        fprintf(stderr, "Error on notification: %s\n", err->message);
+        g_error_free(err);
+    }
 }
 
 int main(int argc, char* argv[]) {
