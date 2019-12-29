@@ -1,4 +1,3 @@
-CC=clang
 CFLAGS=-Wall $(shell pkg-config --cflags --libs libnotify)
 
 all: rossa
@@ -11,7 +10,7 @@ config.h:
 	@cp config.def.h $@
 
 rossa: rossa.c systemd_action.c config.h
-	$(CC) $(CFLAGS) rossa.c systemd_action.c -o rossa
+	cc $(CFLAGS) rossa.c systemd_action.c -o rossa
 
 clean:
 	rm rossa
