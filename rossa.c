@@ -11,6 +11,13 @@
 #include "config.h"
 #include "systemd_action.h"
 #include "rossa.h"
+#include "version.h"
+
+void
+print_version()
+{
+    printf("%s\n", VERSION);
+}
 
 void
 print_usage()
@@ -160,7 +167,7 @@ void show_remaining_battery_percentage(int number_of_batteries, char *summary,
 int main(int argc, char* argv[]) {
     bool daemonize = false, one_time = false;
     int opt;
-    while ((opt = getopt(argc, argv, "doh")) != -1) {
+    while ((opt = getopt(argc, argv, "dohv")) != -1) {
         switch(opt) {
         case 'd':
             daemonize = true;
@@ -168,6 +175,9 @@ int main(int argc, char* argv[]) {
         case 'o':
             one_time = true;
             break;
+        case 'v':
+            print_version();
+            exit(0);
         case 'h':
         default:
             print_usage();
