@@ -7,7 +7,6 @@
 #include <unistd.h>
 
 #include <libnotify/notify.h>
-#include <libupower-glib/upower.h>
 
 #include "config.h"
 #include "systemd_action.h"
@@ -165,40 +164,6 @@ void show_remaining_battery_percentage(int number_of_batteries, char *summary,
     free(notification_body);
 }
 
-void
-up_tool_device_changed_cb (UpDevice *device, GParamSpec *pspec, gpointer user_data)
-{
-    printf("device changed\n");
-}
-
-void
-do_monitor()
-{
-    GError *error = NULL;
-    GMainLoop *loop;
-    GPtrArray *devices;
-    UpClient *client;
-
-    client = up_client_new_full(NULL, &error);
-    if (client == NULL) {
-        fprintf(stderr, "Unable to connect to upowerd: %s", error->message);
-        g_error_free(error);
-        exit(1);
-    }
-
-    devices = up_client_get_devices2 (client);
-    for (guint i=0; i < devices->len; i++) {
-        UpDevice *device;
-        device = g_ptr_array_index (devices, i);
-        g_signal_connect (device, "notify", G_CALLBACK (up_tool_device_changed_cb), NULL);
-    }
-
-    loop = g_main_loop_new (NULL, FALSE);
-    printf("main loop\n");
-    g_main_loop_run (loop);
-    printf("main loop end\n");
-}
-
 int main(int argc, char* argv[]) {
     bool daemonize = false, one_time = false;
     int opt;
@@ -219,16 +184,43 @@ int main(int argc, char* argv[]) {
             exit(1);
         }
     }
+    int number_of_batteries = get_number_of_batteries();
     if (daemonize) {
         daemon(true, false);
     }
-
-    if (one_time) {
-        printf("one time");
-    }
     notify_init(EXECUTABLE_NAME);
 
-    do_monitor();
+    while (true) {
+        overall_status current_status = get_overall_status(number_of_batteries);
+
+        switch (current_status) {
+
+        case LOW_BATTERY:
+            show_remaining_battery_percentage(number_of_batteries, "Battery Low", true);
+            break;
+
+        case CRITICAL:
+            hibernate();
+            break;
+
+        case TOO_MUCH:
+            // Not showing a different message here at the moment
+            if (NAG_WHEN_ENOUGH) {
+                show_remaining_battery_percentage(number_of_batteries, "Battery Full", false);
+            }
+            break;
+
+        default:
+            // Not doing anything here at the moment
+            break;
+        }
+
+        if (one_time) {
+            break;
+        } else {
+            sleep(SLEEP_PERIOD);
+        }
+    }
 
     notify_uninit();
     return 0;
