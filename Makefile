@@ -1,4 +1,4 @@
-CFLAGS=-Wall $(shell pkg-config --cflags --libs libnotify)
+CFLAGS=-Wall $(shell pkg-config --cflags --libs libnotify upower-glib)
 
 all: rossa
 
